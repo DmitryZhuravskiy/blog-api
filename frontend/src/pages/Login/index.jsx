@@ -8,6 +8,7 @@ import styles from "./Login.module.scss";
 import { fetchAuth, selectIsAuth } from "../../redux/slices/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
+import { alertTitleClasses } from "@mui/material";
 
 export const Login = () => {
   const isAuth = useSelector(selectIsAuth);
@@ -24,8 +25,18 @@ export const Login = () => {
     mode: "onChange",
   });
 
-  const onSubmit = (values) => {
-    dispatch(fetchAuth(values))
+  const onSubmit = async (values) => {
+    const data = await dispatch(fetchAuth(values));
+
+    if (!data.payload) {
+      return alert(`не удалось авторизоваться`);
+    }
+
+    if (`token` in data.payload) {
+      window.localStorage.setItem(`token`, data.payload.token);
+    } else {
+      alert(`НЕ удалось загрузить данные`);
+    }
   };
 
   if (isAuth) {
@@ -53,7 +64,7 @@ export const Login = () => {
           helperText={errors.password?.message}
           fullWidth
         />
-        <Button  type="submit" size="large" variant="contained" fullWidth>
+        <Button type="submit" size="large" variant="contained" fullWidth>
           Войти
         </Button>
       </form>
