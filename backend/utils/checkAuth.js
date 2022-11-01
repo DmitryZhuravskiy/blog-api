@@ -19,5 +19,6 @@ export default (req, res, next) => {
     });
   }
 
+  //В мастере этого нет
   res.send(token);
 };

@@ -12,7 +12,6 @@ import {
   fetchRegister,
   selectIsAuth,
 } from "../../redux/slices/auth";
-
 import styles from "./Login.module.scss";
 
 export const Registration = () => {

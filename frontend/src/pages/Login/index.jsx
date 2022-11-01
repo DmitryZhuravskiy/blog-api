@@ -8,7 +8,6 @@ import styles from "./Login.module.scss";
 import { fetchAuth, selectIsAuth } from "../../redux/slices/auth";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { alertTitleClasses } from "@mui/material";
 
 export const Login = () => {
   const isAuth = useSelector(selectIsAuth);
@@ -52,19 +51,22 @@ export const Login = () => {
         <TextField
           className={styles.field}
           label="E-Mail"
-          error
+          error={Boolean(errors.email?.message)}
           helperText={errors.email?.message}
+          type="email"
           {...register("email", { required: "Укажите почту" })}
           fullWidth
         />
         <TextField
           className={styles.field}
           label="Пароль"
-          {...register("password", { required: "Укажите пароль" })}
+          error={Boolean(errors.password?.message)}
           helperText={errors.password?.message}
+          {...register("password", { required: "Укажите пароль" })}
+
           fullWidth
         />
-        <Button type="submit" size="large" variant="contained" fullWidth>
+        <Button disabled={!isValid} type="submit" size="large" variant="contained" fullWidth>
           Войти
         </Button>
       </form>

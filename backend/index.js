@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import {
   registerValidation,
   loginValidation,
-  postCreateValidation,
+  postCreateValidation
 } from "./validations.js";
 import { UserController, PostController } from "./controllers/index.js";
 import multer from "multer";
@@ -18,8 +18,11 @@ mongoose
   .catch((err) => console.log("DB is error", err));
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+
+
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => {
@@ -31,6 +34,8 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+app.use('/uploads', express.static('uploads'));
 
 app.get("/", (req, res) => {
   res.send("Dobro poshalovat!");
@@ -49,22 +54,23 @@ app.post(
   UserController.login
 );
 app.get("/auth/me", checkAuth, UserController.getMe);
+
 app.post("/upload", checkAuth, upload.single("image"), (req, res) => {
   res.json({
     url: `/uploads/${req.file.originalname}`,
   });
 });
-app.use('/uploads', express.static('uploads'));
 
 app.get('/tags', PostController.getLastTags);
 app.get("/posts", PostController.getAll);
 app.get('/posts/tags', PostController.getLastTags);
 app.get("/posts/:id", PostController.getOne);
-app.post("/posts", checkAuth, handleValidationErrors, PostController.create);
+app.post("/posts", checkAuth, postCreateValidation, handleValidationErrors, PostController.create);
 app.delete("/posts/:id", checkAuth, PostController.remove);
 app.patch(
   "/posts/:id",
   checkAuth,
+  postCreateValidation,
   handleValidationErrors,
   PostController.update
 );

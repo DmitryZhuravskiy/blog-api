@@ -12,14 +12,17 @@ import axios from "../../axios";
 import styles from "./AddPost.module.scss";
 
 export const AddPost = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const isAuth = useSelector(selectIsAuth);
+  const [isLoading, setLoading] = React.useState(false);
   const [text, setText] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [tags, setTags] = React.useState("");
-  const inputFileRef = React.useRef(null);
   const [imageUrl, setImageUrl] = React.useState();
-  const [isLoading, setLoading] = React.useState(false);
+  const inputFileRef = React.useRef(null);
+  
+  const isEditing = Boolean(id);
 
   const handleChangeFile = async (event) => {
     try {
@@ -27,8 +30,10 @@ export const AddPost = () => {
       const file = event.target.files[0];
       formData.append("image", file);
       const { data } = await axios.post("/upload", formData);
+      //Пришлось поправить, поскольку тут приходит не та дата, в оригинале - 
+      // setImageUrl(data.url); 
       setImageUrl(file.name);
-      console.log(file.name);
+      
     } catch (err) {
       console.warn(err);
       alert("Ошибка при загрузке файла!");
@@ -36,11 +41,49 @@ export const AddPost = () => {
   };
 
   const onClickRemoveImage = () => {
-    setImageUrl('');
+    setImageUrl("");
   };
 
   const onChange = React.useCallback((value) => {
     setText(value);
+  }, []);
+
+  const onSubmit = async () => {
+    try {
+      setLoading(true);
+      const fields = {
+        title,
+        imageUrl,
+        tags,
+        text,
+      };
+      const { data } = isEditing
+        ? await axios.patch(`/posts/${id}`, fields)
+        : await axios.post("/posts", fields);
+
+      const _id = isEditing ? id : data._id;
+      navigate(`/posts/${_id}`);
+    } catch (err) {
+      console.warn(err);
+      alert("Ошибка при создании статьи!");
+    }
+  };
+
+  React.useEffect(() => {
+    if (id) {
+      axios
+        .get(`/posts/${id}`)
+        .then(({ data }) => {
+          setTitle(data.title);
+          setText(data.text);
+          setImageUrl(data.imageUrl);
+          setTags(data.tags.join(","));
+        })
+        .catch((err) => {
+          console.warn(err);
+          alert("Ошибка при получении статьи!");
+        });
+    }
   }, []);
 
   const options = React.useMemo(
@@ -58,23 +101,7 @@ export const AddPost = () => {
     []
   );
 
-  const onSubmit = async () => {
-    try {
-      setLoading(true);
-      const fields = {
-        title,
-        imageUrl,
-        tags: tags.split(`,`),
-        text,
-      };
-      const { data } = await axios.post("/posts", fields);
-      const id = data._id;
-      navigate(`/posts/${id}`)
-    } catch (err) {
-      console.warn(err);
-      alert('Ошибка при создании статьи!');
-    }
-  };
+
 
   if (!window.localStorage.getItem("token") && !isAuth) {
     return <Navigate to="/" />;
@@ -138,7 +165,7 @@ export const AddPost = () => {
       />
       <div className={styles.buttons}>
         <Button size="large" variant="contained" onClick={onSubmit}>
-          Опубликовать
+          {isEditing ? "Сохранить" : "Опубликовать"}
         </Button>
         <a href="/">
           <Button size="large">Отмена</Button>
