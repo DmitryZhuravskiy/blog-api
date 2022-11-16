@@ -1,47 +1,63 @@
-import React from "react";
-import { useNavigate, Navigate, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import React, { useRef, useState } from "react";
 import TextField from "@mui/material/TextField";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
 import SimpleMDE from "react-simplemde-editor";
-
+import { Navigate, useNavigate } from "react-router-dom";
 import "easymde/dist/easymde.min.css";
-import { selectIsAuth } from "../../redux/slices/auth";
-import axios from "../../axios";
 import styles from "./AddPost.module.scss";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAuth, selectIsAuth } from "../../redux/slices/auth";
+import axios from "../../axios";
 
 export const AddPost = () => {
   const navigate = useNavigate();
   const isAuth = useSelector(selectIsAuth);
+  const [isLoading, setIsLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   const [text, setText] = React.useState("");
   const [title, setTitle] = React.useState("");
   const [tags, setTags] = React.useState("");
-  const inputFileRef = React.useRef(null);
-  const [imageUrl, setImageUrl] = React.useState();
-  const [isLoading, setLoading] = React.useState(false);
+  const inputFileRef = useRef(null);
 
-  const handleChangeFile = async (event) => {
+  const handleChangeFile = async (e) => {
     try {
       const formData = new FormData();
-      const file = event.target.files[0];
-      formData.append("image", file);
+      formData.append("image", e.target.files[0]);
       const { data } = await axios.post("/upload", formData);
-      setImageUrl(file.name);
-      console.log(file.name);
+      setImageUrl(data.url);
     } catch (err) {
-      console.warn(err);
+      navigate(`/posts`);
       alert("Ошибка при загрузке файла!");
     }
   };
 
   const onClickRemoveImage = () => {
-    setImageUrl('');
+    setImageUrl("");
   };
 
   const onChange = React.useCallback((value) => {
     setText(value);
   }, []);
+
+  const onSubmit = async () => {
+    try {
+      setIsLoading(true);
+      const fields = {
+        text,
+        title,
+        tags: tags.split(","),
+        imageUrl,
+      };
+      const { data } = await axios.post("/posts", fields);
+      const id = data._id;
+      navigate(`/posts/${id}`);
+    } catch (err) {
+      console.warn(err);
+      alert("Ошибка при создании статьи");
+      navigate(`/posts`);
+    }
+  };
 
   const options = React.useMemo(
     () => ({
@@ -58,24 +74,6 @@ export const AddPost = () => {
     []
   );
 
-  const onSubmit = async () => {
-    try {
-      setLoading(true);
-      const fields = {
-        title,
-        imageUrl,
-        tags: tags.split(`,`),
-        text,
-      };
-      const { data } = await axios.post("/posts", fields);
-      const id = data._id;
-      navigate(`/posts/${id}`)
-    } catch (err) {
-      console.warn(err);
-      alert('Ошибка при создании статьи!');
-    }
-  };
-
   if (!window.localStorage.getItem("token") && !isAuth) {
     return <Navigate to="/" />;
   }
@@ -83,9 +81,9 @@ export const AddPost = () => {
   return (
     <Paper style={{ padding: 30 }}>
       <Button
-        onClick={() => inputFileRef.current.click()}
         variant="outlined"
         size="large"
+        onClick={() => inputFileRef.current.click()}
       >
         Загрузить превью
       </Button>
@@ -96,22 +94,17 @@ export const AddPost = () => {
         hidden
       />
       {imageUrl && (
-        <>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={onClickRemoveImage}
-          >
-            Удалить
-          </Button>
-          <img
-            className={styles.image}
-            src={`http://localhost:4444/uploads/${imageUrl}`}
-            alt="Uploaded"
-          />
-        </>
+        <Button variant="contained" color="error" onClick={onClickRemoveImage}>
+          Удалить
+        </Button>
       )}
-
+      {imageUrl && (
+        <img
+          className={styles.image}
+          src={`http://localhost:4444${imageUrl}`}
+          alt="Uploaded"
+        />
+      )}
       <br />
       <br />
       <TextField

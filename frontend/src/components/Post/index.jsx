@@ -47,6 +47,8 @@ export const Post = ({
       {imageUrl && (
         <img
           className={clsx(styles.image, { [styles.imageFull]: isFullPost })}
+          width='755'
+          height='300'
           src={imageUrl}
           alt={title}
         />
